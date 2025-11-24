@@ -2,6 +2,7 @@ import datetime
 import math
 from typing import Optional, Sequence
 
+import pytz
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, RowMapping
@@ -124,7 +125,7 @@ async def create_article(
         session: AsyncSession,
 ) -> bool:
     """
-    创建一个文章，如果创建失败会抛出异常并终止，该异常的抛出依赖于AsyncSession.add()方法
+    创建一个文章，如果创建失败会抛出异常并终止，该异常的抛出依赖于AsyncSession.add()方法，注意，文章的更新时间使用的是东八区时间
     :param article_title: 文章标题
     :param article_cover: 封面URL
     :param article_abstract: 文章摘要
@@ -134,7 +135,7 @@ async def create_article(
     :param session: 会话工厂
     :return: 如果创建成功，返回True
     """
-    update_time = datetime.datetime.now()
+    update_time = datetime.datetime.now(tz=pytz.timezone("Etc/GMT-8"))
     if series_id is None:
         article = Articles(
             article_title=article_title,
