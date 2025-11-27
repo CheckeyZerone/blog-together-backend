@@ -7,7 +7,8 @@ from app.crud.article import (get_article_info,
                               get_article_info_page_count,
                               get_article,
                               get_series_id,
-                              create_article, get_category_id, create_category, get_all_categories)
+                              create_article, get_category_id, create_category, get_all_categories,
+                              delete_article_by_id)
 from app.database import get_database
 from typing import Annotated
 from app.api_responser import TodoResponse, OKResponse, ErrorResponse
@@ -202,3 +203,18 @@ async def post_categories(
         logger.error(e)
         return ErrorResponse(e)
     return OKResponse(content=content)
+
+@router.delete("/delete/article", summary="待实现")
+async def delete_article(
+        article_id: Annotated[int, Query()],
+        session: AsyncSession = Depends(get_database)
+):
+    try:
+        content = await delete_article_by_id(article_id=article_id, session=session)
+        return OKResponse(content=content)
+    except ValueError as e:
+        logger.warning(e)
+        return ErrorResponse(e)
+    except Exception as e:
+        logger.exception(e)
+        return ErrorResponse(e)

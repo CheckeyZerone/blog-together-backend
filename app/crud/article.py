@@ -5,7 +5,7 @@ from typing import Optional, Sequence
 import pytz
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func, RowMapping
+from sqlalchemy import select, or_, func, RowMapping, delete
 from app.models.article import Articles, ArticleSeries, ArticleCategories
 
 
@@ -176,7 +176,7 @@ async def get_series_id(
         )
         result = await session.scalars(stmt)
         try:
-            series_id = result.first()[0]
+            series_id = result.first()
         except TypeError as e:
             raise Exception(f"series_name={series_name}，该series_name可能并不存在，因而触发异常{e}")
     else:
@@ -194,9 +194,9 @@ async def get_category_id(
         try:
             article_category_id = result.first()
             if article_category_id is None and category_name != "all":
-                raise TypeError(f"{category_name}不存在！")
-        except TypeError as e:
-            raise TypeError(f"category_name={category_name}，该category_name可能并不存在，因而触发异常{e}")
+                raise ValueError(f"{category_name}不存在！")
+        except ValueError as e:
+            raise ValueError(f"category_name={category_name}，该category_name可能并不存在，因而触发异常{e}")
         except Exception as e:
             raise e
         return article_category_id
@@ -231,5 +231,23 @@ async def get_all_categories(
     content = result.mappings().fetchall()
     logger.debug(f"content={content}")
     return content
+
+async def delete_article_by_id(
+        article_id: int,
+        session: AsyncSession,
+):
+    stmt = (
+        select(Articles.article_id)
+        .where(or_(Articles.article_id == article_id))
+    )
+    result = await session.scalars(stmt)
+    if result.first() is None:
+        raise ValueError(f"article_id={article_id}不存在！")
+
+    stmt = (delete(Articles)
+            .where(or_(Articles.article_id == article_id)))
+    await session.execute(stmt)
+    await session.commit()
+    return True
 
 
