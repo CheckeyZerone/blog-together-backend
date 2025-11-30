@@ -3,17 +3,22 @@ import sys
 from typing import Literal, Annotated, Optional, TextIO, Tuple
 
 from pydantic import Field, computed_field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL, create_engine, text
 
 
 class Settings(BaseSettings):
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    # class Config:
+    #     env_file = ".env"
+    #     env_file_encoding = "utf-8"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
 
     def __init__(self):
-        if not os.path.exists(os.path.join(self.root_url, self.Config.env_file)):
+        if not os.path.exists(os.path.join(self.root_url, self.model_config["env_file"])):
             with open(os.path.join(self.root_url, self.Config.env_file), "w") as file:
                 config_default: str = \
                 "DB_TYPE=sqlite DB_NAME=blog_data DB_USERNAME=root DB_HOST=localhost LOG_LEVEL=INFO".replace(" ", "\n")
