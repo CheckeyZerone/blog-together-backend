@@ -37,7 +37,7 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async
     # output_path, log_level = get_logger_config()
     output_path, log_level = settings.logger_config
     logger.add(output_path, level=log_level)
-    logger.info(f"已设置日志输出路径为{log_level}，输出等级为{log_level}")
+    logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
 
     # 初始化数据库
     engine, session_factory = await db.setup_database_connection(settings.database_url)
