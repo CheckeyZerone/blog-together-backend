@@ -58,6 +58,7 @@ async def articles_by_category(
             ```
     """
     # logger.debug(items.limit)
+    logger.info(f"查询：{filter_params}")
     if filter_params.is_series:
         return TodoResponse()
     else:
@@ -76,6 +77,11 @@ async def articles_by_category(
                 },
                 "article_list": article_list
             }
+            logger.info(
+                f"查询到page={content['info']['page']}, "
+                f"total_page={content['info']['total_page']}, "
+                f"len={len(content['article_list'])}"
+            )
             return OKResponse(content=content)
         except ValueError as e:
             logger.error(e)
@@ -97,9 +103,9 @@ async def article_by_id(
     根据id获取某一文章的全部信息
     :param article_id: 文章的id
     :param session: 会话工厂
-    :return: 文章的完整信息Json，文章不存在或查询失败会返回404错误码和错误信息，==注意，这是一个只有一个字典的列表，而不是一个字典==
+    :return: 文章的完整信息Json，文章不存在或查询失败会返回404错误码和错误信息
             ```
-            [{
+            {
                 "article_id": 文章id,
                 "article_title": 文章标题,
                 "article_series": 文章所属系列的id，可能为空,
@@ -108,13 +114,15 @@ async def article_by_id(
                 "article_abstract": 文章摘要（Markdown）,
                 "article_content": 文章正文（Markdown）,
                 "article_category": 文章所属category的id
-            }]
+            }
             ```
     """
+    logger.info(f"查询article_id={article_id}")
     try:
         content = await get_article(article_id=article_id, session=session)
         if not content:
             raise HTTPException(status_code=404, detail=f"数据库中没有article_id = {article_id}的文章/系列")
+        logger.info(f"查询到article_id={article_id}, article_title={content['article_title']}")
         return OKResponse(content=content)
     except Exception as e:
         logger.error(e)
@@ -134,12 +142,14 @@ async def article_categories(
             }
             ```
     """
+    logger.info(f"查询文章类别")
     try:
         content = await get_all_categories(session=session)
+        logger.info(f"全部文章类别：{content}")
+        return OKResponse(content=content)
     except Exception as e:
         logger.exception(e)
         return ErrorResponse(e)
-    return OKResponse(content=content)
 
 @router.get("/series/{series_id}", summary="待实现")
 async def series_by_id(series_id: int):
@@ -167,6 +177,7 @@ async def post_article(
     :param session: 会话工厂
     :return: 如果正常上传返回包含True的一个JSONResponse，否则抛出异常并返回包含错误信息的JSONResponse
     """
+    logger.info(f"正在创建文章 {creator_params.article_title}")
     try:
         content = await create_article(
             article_title=creator_params.article_title,
@@ -177,10 +188,12 @@ async def post_article(
             series_id=await get_series_id(creator_params.series_name, session=session),
             session=session
         )
+        if content:
+            logger.info(f"已创建文章 {creator_params.article_title}")
+        return OKResponse(content=content)
     except Exception as e:
         logger.error(e)
         return ErrorResponse(e)
-    return OKResponse(content=content)
 
 @router.post("/post/category", summary="上传文章类别")
 async def post_categories(
@@ -204,13 +217,17 @@ async def post_categories(
         return ErrorResponse(e)
     return OKResponse(content=content)
 
-@router.delete("/delete/article", summary="待实现")
+@router.delete("/delete/article", summary="根据article_id删除文章")
 async def delete_article(
         article_id: Annotated[int, Query()],
         session: AsyncSession = Depends(get_database)
 ):
+    # TODO: 之后改为逻辑删除
+    logger.info(f"尝试删除article_id={article_id}")
     try:
         content = await delete_article_by_id(article_id=article_id, session=session)
+        if content:
+            logger.info(f"已删除article_id={article_id}")
         return OKResponse(content=content)
     except ValueError as e:
         logger.warning(e)
