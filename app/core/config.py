@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str | URL:
         if self.db_type.lower() == "sqlite":
-            url = f"sqlite:///{self.root_url}/{self.db_path}/{self.db_name}.db"
+            url = f"sqlite+aiosqlite:///{self.root_url}/{self.db_path}/{self.db_name}.db"
         elif self.db_type.lower() == "mysql":
             url = URL.create(
                 self.db_type,

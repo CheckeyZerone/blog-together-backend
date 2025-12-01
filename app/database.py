@@ -1,6 +1,6 @@
 from typing import Tuple, AsyncGenerator, cast
 from loguru import logger
-from sqlalchemy import Column, Unicode, Integer, String, UnicodeText
+from sqlalchemy import Column, Unicode, Integer, String, UnicodeText, URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncEngine
 from app.models.base import Base
 from app.config import get_database_url
@@ -17,13 +17,14 @@ class Projects(Base):
     project_cover: String = Column('project_cover', String(1024), nullable=False)
 
 
-async def setup_database_connection() -> Tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:
+async def setup_database_connection(database_url: str | URL) -> Tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:
     """
     创建数据库引擎和会话工厂
     FastAPI启动时在lifespan中调用
     """
     logger.info("创建数据库（异步）引擎中……")
-    engine = create_async_engine(get_database_url())
+    # engine = create_async_engine(get_database_url())
+    engine = create_async_engine(url=database_url)
     logger.info("创建数据库（异步）引擎成功！")
     logger.info("创建数据库（异步）会话工厂中……")
     session_factory = async_sessionmaker(

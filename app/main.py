@@ -1,6 +1,7 @@
 import sys
+from functools import lru_cache
 from typing import TypedDict, AsyncIterator, Any, AsyncGenerator
-
+from app.core.config import Settings
 from fastapi.params import Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -20,19 +21,26 @@ class AppState(TypedDict):
     engine: AsyncEngine
     session_factory: AsyncSession
 
+@lru_cache
+async def get_settings() -> Settings:
+    settings = Settings()
+    return settings
 
 @asynccontextmanager
 async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async_sessionmaker[AsyncSession]], None]:
     logger.info("程序启动中……")
 
+    settings = await get_settings()
+
     # 设置日志等级
     logger.remove()
-    output_path, log_level = get_logger_config()
+    # output_path, log_level = get_logger_config()
+    output_path, log_level = settings.logger_config
     logger.add(output_path, level=log_level)
     logger.info(f"已设置日志输出路径为{log_level}，输出等级为{log_level}")
 
     # 初始化数据库
-    engine, session_factory = await db.setup_database_connection()
+    engine, session_factory = await db.setup_database_connection(settings.database_url)
     await db.init_database_tables(engine)
     # await db.create_db()
     logger.info("程序启动成功！")
