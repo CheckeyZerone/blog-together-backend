@@ -111,7 +111,7 @@ async def get_article(
         .where(or_(Articles.article_id == article_id))
     )
     result = await session.execute(stmt)
-    content = result.mappings().fetchall()
+    content = result.mappings().fetchone()
     logger.debug(f"content={content}")
     return content
 
