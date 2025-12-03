@@ -1,6 +1,6 @@
 import sys
 from functools import lru_cache
-from typing import TypedDict, AsyncIterator, Any, AsyncGenerator
+from typing import TypedDict, AsyncIterator, Any, AsyncGenerator, TextIO
 from app.core.config import Settings
 from fastapi.params import Depends
 from sqlalchemy import text
@@ -38,7 +38,8 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async
     output_path, log_level = settings.logger_config
     logger.add(output_path, level=log_level)
     logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
-
+    if not isinstance(output_path, TextIO):
+        logger.add(sys.stderr, level=log_level)
     # 初始化数据库
     engine, session_factory = await db.setup_database_connection(settings.database_url)
     await db.init_database_tables(engine)
