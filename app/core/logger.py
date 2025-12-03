@@ -61,6 +61,7 @@ def setup_logger(
         # colorize=True,
         level=level,
         backtrace=False,
+        enqueue=True,
     )
 
     # 文件输出
@@ -71,6 +72,7 @@ def setup_logger(
             # colorize=True,
             level=level,
             backtrace=True,
+            enqueue=True,
         )
 
     # 配置第三方日志库
