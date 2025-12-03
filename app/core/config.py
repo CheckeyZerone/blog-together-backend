@@ -16,13 +16,15 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8"
     )
-
     def __init__(self):
         if not os.path.exists(os.path.join(self.root_url, self.model_config["env_file"])):
-            with open(os.path.join(self.root_url, self.Config.env_file), "w") as file:
+            with open(os.path.join(self.root_url, self.model_config["env_file"]), "w", encoding="utf-8") as file:
                 config_default: str = \
-                "DB_TYPE=sqlite DB_NAME=blog_data DB_USERNAME=root DB_HOST=localhost LOG_LEVEL=INFO".replace(" ", "\n")
-                file.write(config_default)
+                ("DB_TYPE=sqlite\nDB_NAME=blog_data\n\n"
+                 "# MySQL专用，不使用MySQL时不生效\nDB_USERNAME=root\nDB_PASSWORD=password\nDB_HOST=localhost\nDB_PORT\n\n"
+                 "# sqlite专用，不适用sqlite时不生效\nDB_PATH\n\n"
+                 "# 日志设置\nLOG_OUTPUT_PATH\nLOG_LEVEL=INFO")
+                file.writelines(config_default)
         super().__init__()
 
     app_name: str = "Blog Together Backend"
