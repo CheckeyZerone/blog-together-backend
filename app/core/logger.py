@@ -37,7 +37,9 @@ class InterceptHandler(logging.Handler):
 
 def setup_logger(
         output_path: str | TextIO,
-        level: int | str
+        level: int | str,
+        rotation: str,
+        retention: str
 ) -> None:
     logger.configure(extra={"request_id": ''})
     logger.remove()
@@ -73,6 +75,8 @@ def setup_logger(
             level=level,
             backtrace=True,
             enqueue=True,
+            rotation=rotation,
+            retention=retention,
         )
 
     # 配置第三方日志库

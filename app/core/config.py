@@ -23,7 +23,7 @@ class Settings(BaseSettings):
                 ("DB_TYPE=sqlite\nDB_NAME=blog_data\n\n"
                  "# MySQL专用，不使用MySQL时不生效\nDB_USERNAME=root\nDB_PASSWORD=password\nDB_HOST=localhost\nDB_PORT\n\n"
                  "# sqlite专用，不适用sqlite时不生效\nDB_PATH\n\n"
-                 "# 日志设置\nLOG_OUTPUT_PATH\nLOG_LEVEL=INFO")
+                 "# 日志设置\nLOG_OUTPUT_PATH\nLOG_LEVEL=INFO\nLOG_ROTATION\nLOG_RETENTION\n\n")
                 file.writelines(config_default)
         super().__init__()
 
@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     # 日志设置
     log_output_path: Optional[str] = None
     log_level: Annotated[Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], Field(default="INFO")]
+    log_rotation: Annotated[str, Field(default="16 MB")]  # 日志轮转条件，支持天数和大小
+    log_retention: Annotated[str, Field(default="30 days")]  # 日志保存条件，支持天数
 
     @computed_field
     @property
@@ -87,7 +89,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def logger_config(self) -> Tuple[str | TextIO, str]:
+    def logger_config(self) -> Tuple[str | TextIO, str, str, str]:
         if self.log_output_path is None:
             output_path: TextIO | str = sys.stderr
         elif not os.path.isdir(self.log_output_path):
@@ -101,7 +103,9 @@ class Settings(BaseSettings):
                 os.makedirs(output_path)
             output_path = os.path.join(output_path, '{time}.log')
         log_level: str = self.log_level.upper()
-        return output_path, log_level
+        log_rotation: str = self.log_rotation.lower()
+        log_retention: str = self.log_retention.lower()
+        return output_path, log_level, log_rotation, log_retention
 
 
 

@@ -36,12 +36,12 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async
     # 配置日志库
     # logger.remove()
     # output_path, log_level = get_logger_config()
-    output_path, log_level = settings.logger_config
+    output_path, log_level, log_rotation, log_retention = settings.logger_config
     # logger.add(output_path, level=log_level)
     # logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
     # if not isinstance(output_path, TextIO):
     #     logger.add(sys.stderr, level=log_level)
-    setup_logger(output_path, log_level)
+    setup_logger(output_path, log_level, log_rotation, log_retention)
     logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
 
     # 初始化数据库
