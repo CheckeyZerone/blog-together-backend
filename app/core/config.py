@@ -88,9 +88,18 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def logger_config(self) -> Tuple[str | TextIO, str]:
-        output_path: TextIO | str = sys.stderr
-        if self.log_output_path is not None and len(self.log_output_path) != 0:
-            output_path: str = self.log_output_path
+        if self.log_output_path is None:
+            output_path: TextIO | str = sys.stderr
+        elif not os.path.isdir(self.log_output_path):
+            raise ValueError(f"{self.log_output_path} 不是目录路径")
+        else:
+            if os.path.isabs(self.log_output_path):
+                output_path = os.path.abspath(os.path.join(self.log_output_path, "logs"))
+            else:
+                output_path = os.path.abspath(os.path.join(self.root_url, self.log_output_path, "logs"))
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+            output_path = os.path.join(output_path, '{time}.log')
         log_level: str = self.log_level.upper()
         return output_path, log_level
 
