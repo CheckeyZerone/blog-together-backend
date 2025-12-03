@@ -15,6 +15,7 @@ import app.routers as routers
 from contextlib import asynccontextmanager
 
 from app.config import get_logger_config
+from app.core.logger import setup_logger
 
 
 class AppState(TypedDict):
@@ -32,14 +33,17 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async
 
     settings = await get_settings()
 
-    # 设置日志等级
-    logger.remove()
+    # 配置日志库
+    # logger.remove()
     # output_path, log_level = get_logger_config()
     output_path, log_level = settings.logger_config
-    logger.add(output_path, level=log_level)
+    # logger.add(output_path, level=log_level)
+    # logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
+    # if not isinstance(output_path, TextIO):
+    #     logger.add(sys.stderr, level=log_level)
+    setup_logger(output_path, log_level)
     logger.info(f"已设置日志输出路径为{output_path}，输出等级为{log_level}")
-    if not isinstance(output_path, TextIO):
-        logger.add(sys.stderr, level=log_level)
+
     # 初始化数据库
     engine, session_factory = await db.setup_database_connection(settings.database_url)
     await db.init_database_tables(engine)
@@ -98,5 +102,5 @@ async def db_check(database: AsyncSession = Depends(db.get_database)):
 """
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config=None)
 
