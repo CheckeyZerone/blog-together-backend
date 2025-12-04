@@ -17,10 +17,12 @@ class Articles(Base):
     article_abstract: String = Column('article_abstract', UnicodeText, nullable=False)   # 文章摘要（Markdown）
     article_content: UnicodeText = Column('article_content', UnicodeText, nullable=False)   # 文章正文（Markdown）
     article_category_id: Integer = Column('article_category_id', Integer, nullable=False)   # 文章类型id
+    article_delete_time: DateTime = Column('article_delete_time', DateTime, nullable=True)   # 文章删除时间
 
     def __repr__(self):
         return (f'Articles(article_id={self.article_id}, article_title={self.article_title}, '
-                f'series_id={self.series_id}, update_time={self.update_time})')
+                f'series_id={self.series_id}, update_time={self.update_time}), '
+                f'article_is_delete={True if self.article_delete_time else False}')
 
 
 class ArticleSeries(Base):
