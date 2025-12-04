@@ -25,7 +25,7 @@ class SettingsTest(TestCase):
 
     def test_settings_output_dir(self):
         settings = self.settings
-        output_path, _ = settings.logger_config
+        output_path, _, _, _ = settings.logger_config
         print(f'output_path = "{output_path}"')
         print(f'is_dir = "{os.path.isdir(output_path)}"')
         assert isinstance(output_path, str) or isinstance(output_path, TextIO)
