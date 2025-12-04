@@ -44,3 +44,7 @@ class ArticleCategoryCreatorParams(BaseModel):
     :param article_category_name: 文章类别名
     """
     article_category_name: str
+
+class ArticleDeleteParams(BaseModel):
+    article_id: int
+    is_force: bool = False

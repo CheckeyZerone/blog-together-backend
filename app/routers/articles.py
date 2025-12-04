@@ -12,7 +12,8 @@ from app.crud.article import (get_article_info,
 from app.database import get_database
 from typing import Annotated
 from app.api_responser import TodoResponse, OKResponse, ErrorResponse
-from app.schemas.article import ArticleAndSeriesFilterParams, ArticleCreatorParams, ArticleCategoryCreatorParams
+from app.schemas.article import ArticleAndSeriesFilterParams, ArticleCreatorParams, ArticleCategoryCreatorParams, \
+    ArticleDeleteParams
 
 router = APIRouter(
     prefix="/articles",
@@ -219,15 +220,20 @@ async def post_categories(
 
 @router.delete("/delete/article", summary="根据article_id删除文章")
 async def delete_article(
-        article_id: Annotated[int, Query()],
+        article_delete_params: Annotated[ArticleDeleteParams, Query()],
+        # article_id: Annotated[int, Query()],
         session: AsyncSession = Depends(get_database)
 ):
     # TODO: 之后改为逻辑删除
-    logger.info(f"尝试删除article_id={article_id}")
+    logger.info(f"尝试删除article_id={article_delete_params.article_id}")
     try:
-        content = await delete_article_by_id(article_id=article_id, session=session)
+        content = await delete_article_by_id(
+            article_id=article_delete_params.article_id,
+            is_force=article_delete_params.is_force,
+            session=session
+        )
         if content:
-            logger.info(f"已删除article_id={article_id}")
+            logger.info(f"已删除article_id={article_delete_params.article_id}")
         return OKResponse(content=content)
     except ValueError as e:
         logger.warning(e)

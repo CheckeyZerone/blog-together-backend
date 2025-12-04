@@ -5,8 +5,9 @@ from typing import Optional, Sequence
 import pytz
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func, RowMapping, delete
+from sqlalchemy import select, or_, func, RowMapping, delete, and_, update
 from app.models.article import Articles, ArticleSeries, ArticleCategories
+from app.tools import get_now_datetime_async
 
 
 async def get_article_info(
@@ -49,6 +50,7 @@ async def get_article_info(
                 Articles.article_cover,
                 Articles.article_category_id
             )
+            .where(or_(Articles.article_delete_time is None))
             .order_by(Articles.update_time)
             .limit(limit)
             .offset((skip - 1) * limit)
@@ -63,7 +65,7 @@ async def get_article_info(
                 Articles.article_cover,
                 Articles.article_category_id
             )
-            .where(or_(Articles.article_category_id == category))
+            .where(and_(Articles.article_category_id == category, Articles.article_delete_time is None))
             .order_by(Articles.update_time)
             .limit(limit)
             .offset((skip - 1) * limit)
@@ -80,12 +82,13 @@ async def get_article_info_page_count(
     if article_category_name == "all":
         stmt = (
             select(func.count(Articles.article_id))
+            .where(and_(Articles.article_delete_time is None))
         )
     else:
         article_category_id = await get_category_id(article_category_name, session)
         stmt = (
             select(func.count(Articles.article_id).label("articles_count"))
-            .where(or_(Articles.article_category_id == article_category_id))
+            .where(and_(Articles.article_category_id == article_category_id, Articles.article_delete_time is None))
         )
     result = await session.scalars(stmt)
     total_page = math.ceil(result.first() / limit)
@@ -108,7 +111,7 @@ async def get_article(
             Articles.article_content,
             Articles.article_category_id
         )
-        .where(or_(Articles.article_id == article_id))
+        .where(and_(Articles.article_id == article_id, Articles.article_delete_time is None))
     )
     result = await session.execute(stmt)
     content = result.mappings().fetchone()
@@ -135,7 +138,7 @@ async def create_article(
     :param session: 会话工厂
     :return: 如果创建成功，返回True
     """
-    update_time = datetime.datetime.now(tz=pytz.timezone("Etc/GMT-8"))
+    update_time = await get_now_datetime_async()
     if series_id is None:
         article = Articles(
             article_title=article_title,
@@ -234,18 +237,25 @@ async def get_all_categories(
 
 async def delete_article_by_id(
         article_id: int,
+        is_force: bool,
         session: AsyncSession,
 ):
-    stmt = (
-        select(Articles.article_id)
-        .where(or_(Articles.article_id == article_id))
-    )
-    result = await session.scalars(stmt)
-    if result.first() is None:
-        raise ValueError(f"article_id={article_id}不存在！")
-
-    stmt = (delete(Articles)
-            .where(or_(Articles.article_id == article_id)))
+    if is_force:
+        stmt = (
+            select(Articles.article_id)
+            .where(or_(Articles.article_id == article_id))
+        )
+        result = await session.scalars(stmt)
+        if result.first() is None:
+            raise ValueError(f"article_id={article_id}不存在！")
+        stmt = (delete(Articles)
+                .where(or_(Articles.article_id == article_id)))
+    else:
+        stmt = (
+            update(Articles)
+            .where(and_(Articles.article_id == article_id, Articles.article_delete_time is None))
+            .values(article_delete_time=await get_now_datetime_async())
+        )
     await session.execute(stmt)
     await session.commit()
     return True
