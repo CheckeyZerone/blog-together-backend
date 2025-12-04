@@ -7,14 +7,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 import app.database as db
 from loguru import logger
-import app.models as models
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import app.routers as routers
 from contextlib import asynccontextmanager
-
-from app.config import get_logger_config
 from app.core.logger import setup_logger
 
 
@@ -46,7 +43,7 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[dict[str, AsyncEngine | async
 
     # 初始化数据库
     engine, session_factory = await db.setup_database_connection(settings.database_url)
-    await db.init_database_tables(engine)
+    # await db.init_database_tables(engine)
     # await db.create_db()
     logger.info("程序启动成功！")
 

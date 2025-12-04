@@ -33,6 +33,7 @@ async def setup_database_connection(database_url: str | URL) -> Tuple[AsyncEngin
         class_=AsyncSession
     )
     logger.info("创建数据库（异步）会话工厂成功")
+    await init_database_tables(engine)
     return engine, session_factory
 
 async def init_database_tables(engine: AsyncEngine) -> None:
@@ -42,8 +43,11 @@ async def init_database_tables(engine: AsyncEngine) -> None:
     :param engine: 数据库引擎
     :return: None
     """
+    logger.info(f"数据表初始化中……")
+    import app.models
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    logger.info(f"数据表初始化完成")
 
 
 async def close_database(engine: AsyncEngine) -> None:
