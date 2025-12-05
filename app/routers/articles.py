@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 @router.get("",summary="分页查询文章/系列信息")
-async def articles_by_category(
+async def get_articles_by_category(
         filter_params: Annotated[ArticleAndSeriesFilterParams, Query()],
         # category: Annotated[str, Query(max_length=30)] = "all",
         # is_series: bool = False,
@@ -97,7 +97,7 @@ async def articles_by_category(
 
 
 @router.get("/article", summary="查询文章信息")
-async def article_by_id(
+async def get_article_by_id(
         article_id: Annotated[int, Query()],
         session: AsyncSession = Depends(get_database)
 ) -> JSONResponse:
