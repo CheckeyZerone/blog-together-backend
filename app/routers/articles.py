@@ -70,6 +70,7 @@ async def articles_by_category(
             article_list = await get_article_info(category=filter_params.category_name,
                                                   skip=filter_params.skip,
                                                   limit=filter_params.limit,
+                                                  is_recycled=False,
                                                   session=session)
             content = {
                 "info": {

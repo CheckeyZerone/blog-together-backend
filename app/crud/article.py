@@ -6,14 +6,44 @@ import pytz
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, RowMapping, delete, and_, update
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.article import Articles, ArticleSeries, ArticleCategories
 from app.tools import get_now_datetime_async
+
+async def get_article_info_condition(
+        category: str,
+        is_recycled: bool,
+        session: AsyncSession,
+) -> ColumnElement[bool]:
+    """
+    返回文章查询条件
+    :param category: 类别
+    :param is_recycled: 查询内容是否为回收站内容
+    :param session: 会话工厂
+    :return: 一个查询条件，该条件为.where()方法的参数
+    """
+    if is_recycled:
+        recycled_filter: ColumnElement[bool] = or_(Articles.article_delete_time != None)
+    else:
+        recycled_filter: ColumnElement[bool] = or_(Articles.article_delete_time == None)
+
+    category_filter: Optional[ColumnElement[bool] | bool] = None
+    if category != "all":
+        article_category_id = await get_category_id(category_name=category, session=session)
+        category_filter = ArticleCategories.article_category_id == article_category_id
+
+    ret = recycled_filter
+    if category_filter is not None:
+        ret = and_(ret, category_filter)
+
+    return ret
 
 
 async def get_article_info(
         category: str,
         skip: int,
         limit: int,
+        is_recycled: bool,
         session: AsyncSession
 ) -> Sequence[RowMapping]:
     """
@@ -21,6 +51,7 @@ async def get_article_info(
     :param category: 类别
     :param skip: 查询页数
     :param limit: 每页最大查询数
+    :param is_recycled: bool 查询内容是否为回收站内容，为True时查询回收站内的文章
     :param session: 会话工厂
     :return: 一个包含文章信息的列表，列表的每个元素是一个如下的JSON:
             {
@@ -40,36 +71,23 @@ async def get_article_info(
                 article_category_id: 文章所属category的id,
             }
     """
-    if category == "all":
-        stmt = (
-            select(
-                Articles.article_id,
-                Articles.article_title,
-                Articles.series_id,
-                Articles.update_time,
-                Articles.article_cover,
-                Articles.article_category_id
-            )
-            .where(or_(Articles.article_delete_time is None))
-            .order_by(Articles.update_time)
-            .limit(limit)
-            .offset((skip - 1) * limit)
+    condition: ColumnElement[bool] = await get_article_info_condition(category=category,
+                                                                      is_recycled=is_recycled,
+                                                                      session=session)
+    stmt = (
+        select(
+            Articles.article_id,
+            Articles.article_title,
+            Articles.series_id,
+            Articles.update_time,
+            Articles.article_cover,
+            Articles.article_category_id
         )
-    else:
-        stmt = (
-            select(
-                Articles.article_id,
-                Articles.article_title,
-                Articles.series_id,
-                Articles.update_time,
-                Articles.article_cover,
-                Articles.article_category_id
-            )
-            .where(and_(Articles.article_category_id == category, Articles.article_delete_time is None))
-            .order_by(Articles.update_time)
-            .limit(limit)
-            .offset((skip - 1) * limit)
-        )
+        .where(condition)
+        .order_by(Articles.update_time)
+        .limit(limit)
+        .offset((skip - 1) * limit)
+    )
     result = await session.execute(stmt)
     content = result.mappings().fetchall()
     return content
@@ -82,13 +100,13 @@ async def get_article_info_page_count(
     if article_category_name == "all":
         stmt = (
             select(func.count(Articles.article_id))
-            .where(and_(Articles.article_delete_time is None))
+            .where(and_(Articles.article_delete_time == None))
         )
     else:
         article_category_id = await get_category_id(article_category_name, session)
         stmt = (
             select(func.count(Articles.article_id).label("articles_count"))
-            .where(and_(Articles.article_category_id == article_category_id, Articles.article_delete_time is None))
+            .where(and_(Articles.article_category_id == article_category_id, Articles.article_delete_time == None))
         )
     result = await session.scalars(stmt)
     total_page = math.ceil(result.first() / limit)
@@ -111,7 +129,7 @@ async def get_article(
             Articles.article_content,
             Articles.article_category_id
         )
-        .where(and_(Articles.article_id == article_id, Articles.article_delete_time is None))
+        .where(and_(Articles.article_id == article_id, Articles.article_delete_time == None))
     )
     result = await session.execute(stmt)
     content = result.mappings().fetchone()
