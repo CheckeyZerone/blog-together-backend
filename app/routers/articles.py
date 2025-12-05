@@ -21,13 +21,80 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
+
+async def base_get_article_info(
+        filter_params: ArticleAndSeriesFilterParams,
+        is_recycled: bool,
+        session: AsyncSession,
+) -> JSONResponse:
+    """
+        获取全部文章
+        :param filter_params:
+            category_name: 文章category，可选，默认"all"，表示查询所有文章
+            is_series: 系列文章过滤器，True表示只返回系列文章的入口信息，False表示返回单个文章和系列文章的信息，默认False
+             skip: 文章分页时的第几页，默认1
+            limit: 每页的返回文章信息数量，默认9
+        :param is_recycled: 查询内容是否为回收站内的内容
+        :param session: 会话工厂
+        :return: 一个包含文章信息的列表，列表的每个元素是一个如下的JSON:
+                ```
+                {
+                    "info": {
+                        "page": 当前页数,
+                        "total_page": 总页数
+                    }
+                    "article_list": 文章列表
+                }
+                其中，"article_list"是一个文章列表，其每个元素为如下JSON:
+                {
+                    article_id: 文章id,
+                    article_title: 文章标题,
+                    article_series: 文章所属系列的id，可能为空,
+                    update_time: 文章更新日期,
+                    article_cover: 文章封面的URL,
+                    article_category_id: 文章所属category的id,
+                }
+                ```
+    """
+    logger.info(f"{'回收站' if is_recycled else ''}文章查询：{filter_params}")
+    if filter_params.is_series:
+        return TodoResponse()
+    else:
+        try:
+            total_page = await get_article_info_page_count(filter_params.category_name, filter_params.limit, session)
+            if filter_params.skip > total_page:
+                raise ValueError(f"最大页数为{total_page}，但是获取到的页数skip={filter_params.skip}")
+            article_list = await get_article_info(category=filter_params.category_name,
+                                                  skip=filter_params.skip,
+                                                  limit=filter_params.limit,
+                                                  is_recycled=is_recycled,
+                                                  session=session)
+            content = {
+                "info": {
+                    "page": filter_params.skip,
+                    "total_page": total_page
+                },
+                "article_list": article_list
+            }
+            logger.info(
+                f"查询到page={content['info']['page']}, "
+                f"total_page={content['info']['total_page']}, "
+                f"len={len(content['article_list'])}"
+            )
+            return OKResponse(content=content)
+        except ValueError as e:
+            logger.error(e)
+            return ErrorResponse(e)
+        except TypeError as e:
+            logger.error(e)
+            return ErrorResponse(e)
+        except Exception as e:
+            logger.exception(e)
+            return ErrorResponse(e)
+
 @router.get("",summary="分页查询文章/系列信息")
 async def get_articles_by_category(
         filter_params: Annotated[ArticleAndSeriesFilterParams, Query()],
-        # category: Annotated[str, Query(max_length=30)] = "all",
-        # is_series: bool = False,
-        # skip: Annotated[int, Path(title="skip", ge=1)] = 1,
-        # limit: Annotated[int, Path(title="limit", ge=1)] = 9,
         session: AsyncSession = Depends(get_database)
 ) -> JSONResponse:
     """
@@ -58,42 +125,8 @@ async def get_articles_by_category(
             }
             ```
     """
-    # logger.debug(items.limit)
-    logger.info(f"查询：{filter_params}")
-    if filter_params.is_series:
-        return TodoResponse()
-    else:
-        try:
-            total_page = await get_article_info_page_count(filter_params.category_name, filter_params.limit, session)
-            if filter_params.skip > total_page:
-                raise ValueError(f"最大页数为{total_page}，但是获取到的页数skip={filter_params.skip}")
-            article_list = await get_article_info(category=filter_params.category_name,
-                                                  skip=filter_params.skip,
-                                                  limit=filter_params.limit,
-                                                  is_recycled=False,
-                                                  session=session)
-            content = {
-                "info": {
-                    "page": filter_params.skip,
-                    "total_page": total_page
-                },
-                "article_list": article_list
-            }
-            logger.info(
-                f"查询到page={content['info']['page']}, "
-                f"total_page={content['info']['total_page']}, "
-                f"len={len(content['article_list'])}"
-            )
-            return OKResponse(content=content)
-        except ValueError as e:
-            logger.error(e)
-            return ErrorResponse(e)
-        except TypeError as e:
-            logger.error(e)
-            return ErrorResponse(e)
-        except Exception as e:
-            logger.exception(e)
-            return ErrorResponse(e)
+    ret = await base_get_article_info(filter_params=filter_params, is_recycled=False, session=session)
+    return ret
 
 
 @router.get("/article", summary="查询文章信息")
