@@ -241,3 +241,38 @@ async def delete_article(
     except Exception as e:
         logger.exception(e)
         return ErrorResponse(e)
+
+@router.get("/recycle/articles", summary="待实现")
+async def get_recycle_articles(
+        filter_params: Annotated[ArticleAndSeriesFilterParams, Query()],
+        session: AsyncSession = Depends(get_database)
+):
+    """
+    查询被逻辑删除的文章
+    :param filter_params:
+        category_name: 文章category，可选，默认"all"，表示查询所有文章
+        is_series: 系列文章过滤器，True表示只返回系列文章的入口信息，False表示返回单个文章和系列文章的信息，默认False
+         skip: 文章分页时的第几页，默认1
+        limit: 每页的返回文章信息数量，默认9
+    :param session:
+    :return: 一个包含文章信息的列表，列表的每个元素是一个如下的JSON:
+            ```
+            {
+                "info": {
+                    "page": 当前页数,
+                    "total_page": 总页数
+                }
+                "article_list": 文章列表
+            }
+            其中，"article_list"是一个文章列表，其每个元素为如下JSON:
+            {
+                article_id: 文章id,
+                article_title: 文章标题,
+                article_series: 文章所属系列的id，可能为空,
+                update_time: 文章更新日期,
+                article_cover: 文章封面的URL,
+                article_category_id: 文章所属category的id,
+            }
+    """
+    return TodoResponse()
+
