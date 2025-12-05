@@ -276,19 +276,19 @@ async def delete_article(
         logger.exception(e)
         return ErrorResponse(e)
 
-@router.get("/recycle/articles", summary="待实现")
-async def get_recycle_articles(
+@router.get("/recycle/articles", summary="分页查询回收站内的文章信息")
+async def get_recycled_articles(
         filter_params: Annotated[ArticleAndSeriesFilterParams, Query()],
         session: AsyncSession = Depends(get_database)
-):
+) -> JSONResponse:
     """
-    查询被逻辑删除的文章
+    查询被逻辑删除的文章（即回收站内的文章）
     :param filter_params:
         category_name: 文章category，可选，默认"all"，表示查询所有文章
         is_series: 系列文章过滤器，True表示只返回系列文章的入口信息，False表示返回单个文章和系列文章的信息，默认False
          skip: 文章分页时的第几页，默认1
         limit: 每页的返回文章信息数量，默认9
-    :param session:
+    :param session: 会话工厂
     :return: 一个包含文章信息的列表，列表的每个元素是一个如下的JSON:
             ```
             {
@@ -308,5 +308,6 @@ async def get_recycle_articles(
                 article_category_id: 文章所属category的id,
             }
     """
-    return TodoResponse()
+    ret = await base_get_article_info(filter_params=filter_params, is_recycled=True, session=session)
+    return ret
 

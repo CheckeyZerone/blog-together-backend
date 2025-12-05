@@ -74,14 +74,19 @@ async def get_article_info(
     condition: ColumnElement[bool] = await get_article_info_condition(category=category,
                                                                       is_recycled=is_recycled,
                                                                       session=session)
+    select_columns: list = [
+        Articles.article_id,
+        Articles.article_title,
+        Articles.series_id,
+        Articles.update_time,
+        Articles.article_cover,
+        Articles.article_category_id
+    ]
+    if is_recycled:
+        select_columns.append(Articles.article_delete_time)
     stmt = (
         select(
-            Articles.article_id,
-            Articles.article_title,
-            Articles.series_id,
-            Articles.update_time,
-            Articles.article_cover,
-            Articles.article_category_id
+            *select_columns
         )
         .where(condition)
         .order_by(Articles.update_time)
