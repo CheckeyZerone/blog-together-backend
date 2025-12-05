@@ -67,10 +67,10 @@ async def articles_by_category(
             total_page = await get_article_info_page_count(filter_params.category_name, filter_params.limit, session)
             if filter_params.skip > total_page:
                 raise ValueError(f"最大页数为{total_page}，但是获取到的页数skip={filter_params.skip}")
-            article_list = await get_article_info(filter_params.category_name,
-                                                  filter_params.skip,
-                                                  filter_params.limit,
-                                                  session)
+            article_list = await get_article_info(category=filter_params.category_name,
+                                                  skip=filter_params.skip,
+                                                  limit=filter_params.limit,
+                                                  session=session)
             content = {
                 "info": {
                     "page": filter_params.skip,
